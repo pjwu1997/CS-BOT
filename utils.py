@@ -2,7 +2,7 @@
 from datetime import datetime
 import requests
 import pandas as pd
-from db import getDB, insert, get_collections
+from db import getDB, insert, get_collections, search
 from get_all_pairs import get_all_pair
 
 future_base_url = "https://fapi.binance.com"
@@ -15,13 +15,14 @@ def get_all_symbols():
     response = requests.request("GET", url, headers=headers, data=payload)
     result = []
     for item in response.json()["symbols"]:
-        result.append(item["symbol"])
+        if item["symbol"][-4:] == 'USDT':
+            result.append(item["symbol"])
     return result
 
 def update(timestamp):
     symbols = get_all_pair()
     collections = get_collections()
-    db = getDB()
+    db = getDB(remote=True)
     for symbol in symbols:
         data = {
             "fundings": None,
@@ -39,13 +40,17 @@ def update(timestamp):
                 data.update(util(symbol))
             except:
                 print('data not found for ' + symbol)
-        for key, value in data.items():
-            insert_data = {
-                "symbol": symbol,
-                "timestamp": timestamp,
-                key: value,
-            }
-            insert(db, key, insert_data)
+        # for key, value in data.items():
+        #     insert_data = {
+        #         "symbol": symbol,
+        #         "timestamp": timestamp,
+        #         key: value,
+        #     }
+        #     insert(db, key, insert_data)
+        data["symbol"] = symbol
+        data["timestamp"] = timestamp
+        insert(db, 'data', data)
+
     
 
 # def get_funding(symbol):
@@ -89,7 +94,7 @@ def get_spot_cvd(symbol, period='15m', limit=1):
     res = requests.get(url, params=params).json()
     data = {
         "spot_cvd": float(res[0][-3]) - float(res[0][-2]) / float(res[0][2]),
-        "spot_volume": float(res[0][7]),
+        "spot_volume": float(res[0][7]) / float(res[0][2]),
     }
     return data
 
