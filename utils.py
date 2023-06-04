@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 from db import getDB, insert, get_collections, search
 from get_all_pairs import get_all_pair
+import matplotlib.pyplot as plt
 
 future_base_url = "https://fapi.binance.com"
 spot_base_url = "https://api.binance.com"
@@ -108,3 +109,36 @@ def get_lsur(symbol, period='15m', limit=1):
     return data
 
 # %%
+def subplot():
+    fig,ax=plt.subplots(3,figsize=(15,20))
+    ax[0].set_title('Open interest')
+    ax[1].set_title('LSUR')
+    ax[2].set_title('Funding Rate')
+    return fig, ax
+
+def variation(series):
+    data = series.values
+    a = [0]
+    for i in range(1, len(data)):
+        pct = (data[i] - data[0]) / data[0] * 100
+        a.append(pct)
+    df = pd.Series(a, index=series.index)
+    return df
+    
+def plot(coin_list, interval='4h'):
+    fig, ax = subplot()
+    db = getDB(remote=True)
+    total = {}
+    for symbol in coin_list:
+        total[symbol] = search(db, symbol)
+    for symbol in coin_list:
+        variation(total[symbol]["open_interest"]).plot(ax=ax[0])
+        total[symbol]["lsur"].plot(ax=ax[1])
+        total[symbol]["fundings"].plot(ax=ax[2])
+    ax[0].legend(coin_list)
+    ax[1].legend(coin_list)
+    ax[2].legend(coin_list)
+    current_time = str(datetime.now())
+    name = f'./image/{current_time}.png'
+    plt.savefig(f'./image/{current_time}.png')
+    return name

@@ -11,7 +11,7 @@ from threading import Thread
 from time import sleep
 import datetime
 
-from utils import update
+from utils import update, plot
 # %%
 def datetime_converter():
     ct = datetime.datetime.now()
@@ -39,11 +39,10 @@ response_id = config['response_id']
 openai.api_key = openai_key
 BOT_TOKEN=tg_bot_token
 chat_id=tg_chat_id
+coin_list = ['BTCUSDT', 'ETHUSDT', 'LTCUSDT']
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
-
-response_id = ["1078255899"]
 
 bot.set_my_commands(commands = [
     BotCommand('mostshorted','查詢資費最低之幣種'),
@@ -67,8 +66,12 @@ def schedule_checker():
 
 def function_to_run():
     print('Running: ' + str(datetime.datetime.now()))
-    update(datetime_converter())
+    send_photo(coin_list)
     return 1
+
+def send_photo(coin_list):
+    name = plot(coin_list)
+    bot.send_photo(response_id[0], open(name, 'rb'))
 
 @bot.message_handler(commands=['getid'])
 def get_id(message):
@@ -93,12 +96,12 @@ def getuserid(message):
 
 if __name__ == "__main__":
     # Create the job in schedule.
-    # schedule.every().hour.at(":05").do(function_to_run)
+    schedule.every().hour.at(":02").do(function_to_run)
 
     # Spin up a thread to run the schedule check so it doesn't block your bot.
     # This will take the function schedule_checker which will check every second
     # to see if the scheduled job needs to be ran.
-    # Thread(target=schedule_checker).start() 
+    Thread(target=schedule_checker).start() 
 
     # And then of course, start your server.
     bot.infinity_polling()
