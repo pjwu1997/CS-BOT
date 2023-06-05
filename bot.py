@@ -11,7 +11,7 @@ from threading import Thread
 from time import sleep
 import datetime
 
-from utils import update, plot
+from utils import update, plot, mostshorted, most_oi_changed
 # %%
 def datetime_converter():
     ct = datetime.datetime.now()
@@ -45,8 +45,8 @@ coin_list = ['BTCUSDT', 'ETHUSDT', 'LTCUSDT']
 bot = telebot.TeleBot(BOT_TOKEN)
 
 bot.set_my_commands(commands = [
-    BotCommand('mostshorted','查詢資費最低之幣種'),
-    BotCommand('mostlonged','查詢資費最高之幣種'),
+    BotCommand('mostshorted','查詢資費變化最大之幣種'),
+    BotCommand('mostchanged','查詢持倉變化最大之幣種'),
     BotCommand('getid', '得到聊天id'),
     BotCommand('getuserid', '得到用戶id')
     ])
@@ -73,6 +73,63 @@ def send_photo(coin_list):
     name = plot(coin_list)
     bot.send_photo(response_id[0], open(name, 'rb'))
 
+def send_fundings(send=True):
+    """
+    Send the most changed coins in fundings.
+    """
+    most_changed, most_negative = mostshorted()
+    message = ''
+    for coin_data in most_changed:
+        coin_name = coin_data[0]
+        coin_change = coin_data[1]
+        coin_oi_change = coin_data[2]
+        message += f'{coin_name}: Funding changed {coin_change}, OI changed {coin_oi_change}% \n'
+    message += '\n'
+    for coin_data in most_negative:
+        coin_name = coin_data[0]
+        coin_funding = coin_data[1]
+        coin_oi_change = coin_data[2]
+        message += f'{coin_name}: Funding is {coin_funding}, OI changed {coin_oi_change}% \n'
+    if send:
+        bot.send_message(response_id[0], message)
+    else:
+        return message
+
+def send_oi(send=True):
+    """
+    Send the most changed coins in OI.
+    """
+    most_changed_positive, most_changed_negative = most_oi_changed()
+    message = ''
+    for coin_data in most_changed_positive:
+        coin_name = coin_data[0]
+        coin_oi_change = coin_data[1]
+        message += f'{coin_name}: OI changed {coin_oi_change}% \n'
+    message += '\n'
+    for coin_data in most_changed_negative:
+        coin_name = coin_data[0]
+        coin_oi_change = coin_data[1]
+        message += f'{coin_name}: OI changed {coin_oi_change}% \n'
+    if send:
+        bot.send_message(response_id[0], message)
+    else:
+        return message
+
+
+@bot.message_handler(commands=['mostshorted'])
+def get_fundings(message):
+    # print(message)
+    chat_id = message.chat.id
+    message = send_fundings(send=False)
+    bot.send_message(chat_id, message)
+
+@bot.message_handler(commands=['mostchanged'])
+def get_oi(message):
+    # print(message)
+    chat_id = message.chat.id
+    message = send_oi(send=False)
+    bot.send_message(chat_id, message)
+
 @bot.message_handler(commands=['getid'])
 def get_id(message):
     # print(message)
@@ -97,6 +154,8 @@ def getuserid(message):
 if __name__ == "__main__":
     # Create the job in schedule.
     schedule.every().hour.at(":02").do(function_to_run)
+    schedule.every().hour.at(":03").do(send_fundings)
+    schedule.every().hour.at(":04").do(send_oi)
 
     # Spin up a thread to run the schedule check so it doesn't block your bot.
     # This will take the function schedule_checker which will check every second

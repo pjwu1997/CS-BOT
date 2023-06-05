@@ -142,3 +142,47 @@ def plot(coin_list, interval='4h'):
     name = f'./image/{current_time}.png'
     plt.savefig(f'./image/{current_time}.png')
     return name
+
+def mostshorted():
+    db = getDB(remote=True)
+    all_symbols = get_all_pair()
+    result = []
+    for symbol in all_symbols:
+        ## 4hr data for symbol
+        df = search(db, symbol)
+        # print(df)
+        fundings = df['fundings'].values
+        oi = df['open_interest'].values
+        if None in oi:
+            continue
+        ## 資費下降值
+        rate = round(fundings[-1] - fundings[0], 6)
+        current = round(fundings[-1], 6)
+        oi_change = round((oi[-1] - oi[0]) / oi[0] * 100, 2)
+        result.append([symbol, rate, current, oi_change])
+    most_changed = [[a[0],a[1], a[3]] for a in sorted(result,key=lambda l:l[1])[:10]]
+    most_negative = [[a[0], a[2], a[3]] for a in sorted(result, key=lambda l:l[2])[:10]]
+    return most_changed, most_negative
+
+def most_oi_changed(interval='1h'):
+    db = getDB(remote=True)
+    all_symbols = get_all_pair()
+    result = []
+    for symbol in all_symbols:
+        ## 4hr data for symbol
+        df = search(db, symbol)
+        oi = df['open_interest'].values
+        if None in oi:
+            continue
+        ## 資費下降值
+        oi_change = round((oi[-1] - oi[0]) / oi[0] * 100, 2)
+        result.append([symbol, oi_change])
+    most_changed_positive = sorted(result, key=lambda l: l[1], reverse=True)[:10]
+    most_changed_negative = sorted(result, key=lambda l: l[1])[:10]
+    return most_changed_positive, most_changed_negative
+
+
+
+
+
+
