@@ -79,7 +79,7 @@ def get_price(symbol):
     }
     return data
 
-def get_future_cvd(symbol, period='15m', limit=1):
+def get_future_cvd(symbol, period='15m', limit=2):
     url = future_base_url + '/futures/data/takerlongshortRatio'
     params = {'symbol': symbol, 'period': period, 'limit': limit}
     res = requests.get(url, params=params).json()[0]
@@ -89,7 +89,7 @@ def get_future_cvd(symbol, period='15m', limit=1):
     }
     return data
 
-def get_spot_cvd(symbol, period='15m', limit=1):
+def get_spot_cvd(symbol, period='15m', limit=2):
     url = spot_base_url + '/api/v3/klines'
     params = {'symbol': symbol, 'interval': period, 'limit': limit}
     res = requests.get(url, params=params).json()
