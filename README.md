@@ -26,4 +26,6 @@ Future work:
 
 Developer: Po-Ju Wu
 
+*** NOTE: There's a working version of the trading bot, contact pjwu1997@gmail.com for more info.
+
 
